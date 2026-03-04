@@ -1,0 +1,6 @@
+{
+  "rewrites": [
+    { "source": "/sufiyan", "destination": "/sufiyan.html" }
+  ],
+  "cleanUrls": true
+}
