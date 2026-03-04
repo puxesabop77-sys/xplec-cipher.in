@@ -1,0 +1,740 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Admin — Restricted Access</title>
+  <!-- No index for search engines -->
+  <meta name="robots" content="noindex, nofollow"/>
+  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700&family=Syne:wght@700;800&display=swap" rel="stylesheet"/>
+  <style>
+    *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+    :root {
+      --bg: #060a0f;
+      --panel: #0c1219;
+      --blue: #3b82f6;
+      --blue-dim: rgba(59,130,246,0.18);
+      --green: #22c55e;
+      --red: #ef4444;
+      --yellow: #f59e0b;
+      --border: rgba(59,130,246,0.15);
+      --muted: #4b6080;
+      --text: #c9d8ef;
+      --mono: 'JetBrains Mono', monospace;
+    }
+
+    html, body { height: 100%; }
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: var(--mono);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      min-height: 100vh;
+      overflow-x: hidden;
+    }
+
+    /* ── SCANLINES ── */
+    body::before {
+      content: '';
+      position: fixed;
+      inset: 0;
+      background: repeating-linear-gradient(
+        0deg,
+        transparent,
+        transparent 2px,
+        rgba(0,0,0,0.07) 2px,
+        rgba(0,0,0,0.07) 4px
+      );
+      pointer-events: none;
+      z-index: 999;
+    }
+
+    /* ── LOGIN SCREEN ── */
+    #login-screen {
+      width: min(420px, 92vw);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+
+    .admin-logo {
+      width: 64px; height: 64px;
+      border-radius: 14px;
+      background: linear-gradient(135deg, #1d4ed8, #0b1120);
+      border: 1px solid var(--blue);
+      display: flex; align-items: center; justify-content: center;
+      font-family: 'Syne', sans-serif;
+      font-weight: 800;
+      font-size: 1.4rem;
+      color: var(--blue);
+      box-shadow: 0 0 30px rgba(59,130,246,.25);
+      margin-bottom: 1.5rem;
+    }
+
+    .admin-title {
+      font-family: 'Syne', sans-serif;
+      font-size: 1.35rem;
+      font-weight: 800;
+      color: #fff;
+      margin-bottom: .3rem;
+      letter-spacing: -.02em;
+    }
+
+    .admin-sub {
+      font-size: .72rem;
+      color: var(--muted);
+      letter-spacing: .1em;
+      text-transform: uppercase;
+      margin-bottom: 2.5rem;
+    }
+
+    .login-box {
+      width: 100%;
+      background: var(--panel);
+      border: 1px solid var(--border);
+      border-radius: 18px;
+      padding: 2rem;
+      box-shadow: 0 0 60px rgba(0,0,0,.5);
+    }
+
+    .field-label {
+      font-size: .7rem;
+      letter-spacing: .1em;
+      text-transform: uppercase;
+      color: var(--muted);
+      margin-bottom: .5rem;
+      display: block;
+    }
+
+    .field {
+      width: 100%;
+      background: rgba(255,255,255,0.03);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: .75rem 1rem;
+      color: var(--text);
+      font-family: var(--mono);
+      font-size: .88rem;
+      outline: none;
+      transition: border-color .2s, box-shadow .2s;
+      margin-bottom: 1.3rem;
+    }
+
+    .field:focus {
+      border-color: var(--blue);
+      box-shadow: 0 0 0 3px rgba(59,130,246,.12);
+    }
+
+    .field::placeholder { color: var(--muted); }
+
+    .btn-login {
+      width: 100%;
+      background: var(--blue);
+      color: #fff;
+      border: none;
+      border-radius: 8px;
+      padding: .85rem;
+      font-family: var(--mono);
+      font-weight: 700;
+      font-size: .9rem;
+      cursor: pointer;
+      letter-spacing: .05em;
+      transition: background .2s, box-shadow .2s, transform .15s;
+      margin-top: .2rem;
+    }
+
+    .btn-login:hover {
+      background: #2563eb;
+      box-shadow: 0 0 30px rgba(59,130,246,.4);
+      transform: translateY(-1px);
+    }
+
+    .btn-login:active { transform: scale(0.98); }
+
+    .error-msg {
+      color: var(--red);
+      font-size: .78rem;
+      margin-top: .8rem;
+      text-align: center;
+      min-height: 1.1em;
+      letter-spacing: .03em;
+    }
+
+    .access-warn {
+      margin-top: 1.5rem;
+      font-size: .68rem;
+      color: var(--muted);
+      text-align: center;
+      line-height: 1.6;
+    }
+
+    /* ── DASHBOARD ── */
+    #dashboard {
+      display: none;
+      width: min(960px, 96vw);
+      min-height: 100vh;
+      padding: 2rem 0 4rem;
+      flex-direction: column;
+    }
+
+    .dash-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      border-bottom: 1px solid var(--border);
+      padding-bottom: 1.2rem;
+      margin-bottom: 2rem;
+      flex-wrap: wrap;
+      gap: 1rem;
+    }
+
+    .dash-brand {
+      display: flex; align-items: center; gap: .7rem;
+    }
+
+    .dash-brand-icon {
+      width: 36px; height: 36px;
+      border-radius: 8px;
+      background: var(--blue-dim);
+      border: 1px solid var(--blue);
+      display: flex; align-items: center; justify-content: center;
+      font-size: .8rem; font-weight: 700; color: var(--blue);
+    }
+
+    .dash-brand-name {
+      font-family: 'Syne', sans-serif;
+      font-weight: 800;
+      font-size: 1rem;
+      color: #fff;
+    }
+
+    .dash-user-pill {
+      display: flex; align-items: center; gap: .5rem;
+      background: var(--blue-dim);
+      border: 1px solid var(--border);
+      border-radius: 50px;
+      padding: .35rem .9rem;
+      font-size: .78rem;
+    }
+
+    .user-dot { width: 7px; height: 7px; border-radius: 50%; background: var(--green); }
+
+    .btn-logout {
+      background: transparent;
+      border: 1px solid var(--border);
+      color: var(--muted);
+      font-family: var(--mono);
+      font-size: .75rem;
+      padding: .35rem .8rem;
+      border-radius: 6px;
+      cursor: pointer;
+      transition: color .2s, border-color .2s;
+    }
+
+    .btn-logout:hover { color: var(--red); border-color: var(--red); }
+
+    /* Grid */
+    .stats-row {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+      gap: 1rem;
+      margin-bottom: 2rem;
+    }
+
+    .stat-card {
+      background: var(--panel);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 1.2rem 1.4rem;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .stat-card::before {
+      content: '';
+      position: absolute;
+      top: 0; left: 0; right: 0;
+      height: 2px;
+      background: linear-gradient(90deg, transparent, var(--blue), transparent);
+    }
+
+    .stat-card-label {
+      font-size: .65rem;
+      letter-spacing: .1em;
+      text-transform: uppercase;
+      color: var(--muted);
+      margin-bottom: .5rem;
+    }
+
+    .stat-card-val {
+      font-family: 'Syne', sans-serif;
+      font-size: 1.7rem;
+      font-weight: 800;
+      color: #fff;
+    }
+
+    .stat-card-val.green { color: var(--green); }
+    .stat-card-val.yellow { color: var(--yellow); }
+
+    /* Sections */
+    .dash-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 1.2rem;
+      margin-bottom: 1.2rem;
+    }
+
+    @media (max-width: 640px) {
+      .dash-grid { grid-template-columns: 1fr; }
+    }
+
+    .dash-panel {
+      background: var(--panel);
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      padding: 1.4rem;
+    }
+
+    .dash-panel-title {
+      font-size: .72rem;
+      letter-spacing: .12em;
+      text-transform: uppercase;
+      color: var(--muted);
+      margin-bottom: 1.2rem;
+      display: flex;
+      align-items: center;
+      gap: .5rem;
+    }
+
+    .dash-panel-title::before {
+      content: '';
+      width: 3px; height: 12px;
+      background: var(--blue);
+      border-radius: 2px;
+    }
+
+    /* Activity list */
+    .activity-list { list-style: none; display: flex; flex-direction: column; gap: .65rem; }
+    .activity-item {
+      display: flex;
+      align-items: flex-start;
+      gap: .7rem;
+      font-size: .8rem;
+      color: var(--text);
+    }
+    .activity-dot {
+      width: 7px; height: 7px;
+      border-radius: 50%;
+      margin-top: 5px;
+      flex-shrink: 0;
+    }
+    .activity-dot.green { background: var(--green); box-shadow: 0 0 6px var(--green); }
+    .activity-dot.blue  { background: var(--blue);  box-shadow: 0 0 6px var(--blue);  }
+    .activity-dot.yellow{ background: var(--yellow);box-shadow: 0 0 6px var(--yellow);}
+    .activity-dot.red   { background: var(--red);   box-shadow: 0 0 6px var(--red);   }
+    .activity-time { color: var(--muted); font-size: .7rem; }
+
+    /* Skills progress */
+    .skill-bars { display: flex; flex-direction: column; gap: .9rem; }
+    .skill-row { display: flex; flex-direction: column; gap: .3rem; }
+    .skill-meta { display: flex; justify-content: space-between; font-size: .75rem; }
+    .skill-meta span:last-child { color: var(--blue); }
+    .bar-bg {
+      height: 5px;
+      background: rgba(255,255,255,0.05);
+      border-radius: 50px;
+      overflow: hidden;
+    }
+    .bar-fill {
+      height: 100%;
+      border-radius: 50px;
+      background: linear-gradient(90deg, var(--blue), #60a5fa);
+      width: 0;
+      transition: width 1s cubic-bezier(.4,0,.2,1);
+    }
+
+    /* Terminal */
+    .terminal {
+      background: #050810;
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 1.2rem;
+      font-size: .78rem;
+      line-height: 1.8;
+      color: var(--green);
+      overflow-y: auto;
+      max-height: 200px;
+    }
+
+    .terminal .t-muted { color: var(--muted); }
+    .terminal .t-blue { color: var(--blue); }
+    .terminal .t-white { color: #fff; }
+    .terminal .t-yellow { color: var(--yellow); }
+
+    /* Quick Actions */
+    .quick-actions { display: grid; grid-template-columns: 1fr 1fr; gap: .8rem; }
+    .qa-btn {
+      background: rgba(255,255,255,0.03);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: .9rem;
+      color: var(--text);
+      font-family: var(--mono);
+      font-size: .8rem;
+      cursor: pointer;
+      display: flex; align-items: center; gap: .6rem;
+      transition: background .2s, border-color .2s, transform .15s;
+    }
+    .qa-btn:hover {
+      background: var(--blue-dim);
+      border-color: var(--blue);
+      transform: translateY(-2px);
+    }
+    .qa-icon { font-size: 1.1rem; }
+
+    /* Project table */
+    .project-table { width: 100%; border-collapse: collapse; font-size: .8rem; }
+    .project-table th {
+      text-align: left;
+      color: var(--muted);
+      font-size: .65rem;
+      letter-spacing: .1em;
+      text-transform: uppercase;
+      padding: .5rem .8rem;
+      border-bottom: 1px solid var(--border);
+    }
+    .project-table td {
+      padding: .65rem .8rem;
+      border-bottom: 1px solid rgba(255,255,255,0.03);
+      vertical-align: middle;
+    }
+    .project-table tr:last-child td { border: none; }
+    .badge {
+      display: inline-block;
+      padding: .18rem .6rem;
+      border-radius: 50px;
+      font-size: .65rem;
+      font-weight: 700;
+      letter-spacing: .05em;
+    }
+    .badge.done    { background: rgba(34,197,94,.15);  color: var(--green); }
+    .badge.active  { background: rgba(59,130,246,.15); color: var(--blue); }
+    .badge.pending { background: rgba(245,158,11,.15); color: var(--yellow); }
+
+    /* Toast */
+    .toast {
+      position: fixed;
+      bottom: 2rem; right: 2rem;
+      background: var(--panel);
+      border: 1px solid var(--blue);
+      border-radius: 10px;
+      padding: .8rem 1.2rem;
+      font-size: .8rem;
+      box-shadow: 0 0 30px rgba(0,0,0,.5);
+      display: none;
+      z-index: 1000;
+      animation: slideIn .3s ease;
+    }
+
+    @keyframes slideIn {
+      from { transform: translateY(20px); opacity: 0; }
+      to   { transform: translateY(0); opacity: 1; }
+    }
+  </style>
+</head>
+<body>
+
+<!-- LOGIN -->
+<div id="login-screen">
+  <div class="admin-logo">AA</div>
+  <div class="admin-title">Admin Panel</div>
+  <div class="admin-sub">Restricted Access</div>
+
+  <div class="login-box">
+    <label class="field-label" for="u">Username</label>
+    <input class="field" id="u" type="text" placeholder="enter username" autocomplete="off" spellcheck="false"/>
+
+    <label class="field-label" for="p">Password</label>
+    <input class="field" id="p" type="password" placeholder="••••••••"/>
+
+    <button class="btn-login" onclick="tryLogin()">ACCESS PANEL →</button>
+    <div class="error-msg" id="err"></div>
+  </div>
+  <p class="access-warn">⚠️ Unauthorised access is prohibited.<br/>All login attempts are logged.</p>
+</div>
+
+<!-- DASHBOARD -->
+<div id="dashboard">
+
+  <div class="dash-header">
+    <div class="dash-brand">
+      <div class="dash-brand-icon">AA</div>
+      <span class="dash-brand-name">Admin Panel</span>
+    </div>
+    <div style="display:flex;align-items:center;gap:.8rem;">
+      <div class="dash-user-pill">
+        <span class="user-dot"></span>
+        <span id="logged-user">sufiyan</span>
+      </div>
+      <button class="btn-logout" onclick="logout()">Logout</button>
+    </div>
+  </div>
+
+  <!-- Stat cards -->
+  <div class="stats-row">
+    <div class="stat-card">
+      <div class="stat-card-label">Projects Done</div>
+      <div class="stat-card-val">100+</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-card-label">Active Clients</div>
+      <div class="stat-card-val green">12</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-card-label">Pending Tasks</div>
+      <div class="stat-card-val yellow">5</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-card-label">Skills</div>
+      <div class="stat-card-val">7</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-card-label">Communities</div>
+      <div class="stat-card-val">2</div>
+    </div>
+  </div>
+
+  <!-- Row 1 -->
+  <div class="dash-grid">
+
+    <!-- Activity -->
+    <div class="dash-panel">
+      <div class="dash-panel-title">Recent Activity</div>
+      <ul class="activity-list">
+        <li class="activity-item">
+          <span class="activity-dot green"></span>
+          <div>
+            <div>New project request from Client #14</div>
+            <div class="activity-time">2 mins ago</div>
+          </div>
+        </li>
+        <li class="activity-item">
+          <span class="activity-dot blue"></span>
+          <div>
+            <div>Lumivox Studios landing page deployed</div>
+            <div class="activity-time">1 hour ago</div>
+          </div>
+        </li>
+        <li class="activity-item">
+          <span class="activity-dot yellow"></span>
+          <div>
+            <div>TG Bot scheduled maintenance pending</div>
+            <div class="activity-time">3 hours ago</div>
+          </div>
+        </li>
+        <li class="activity-item">
+          <span class="activity-dot green"></span>
+          <div>
+            <div>Xplec Cipher Community reached 500 members</div>
+            <div class="activity-time">Yesterday</div>
+          </div>
+        </li>
+        <li class="activity-item">
+          <span class="activity-dot red"></span>
+          <div>
+            <div>Video export failed — retrying render</div>
+            <div class="activity-time">Yesterday</div>
+          </div>
+        </li>
+      </ul>
+    </div>
+
+    <!-- Skills -->
+    <div class="dash-panel">
+      <div class="dash-panel-title">Skill Levels</div>
+      <div class="skill-bars" id="skill-bars">
+        <div class="skill-row">
+          <div class="skill-meta"><span>Web Design</span><span>95%</span></div>
+          <div class="bar-bg"><div class="bar-fill" data-w="95"></div></div>
+        </div>
+        <div class="skill-row">
+          <div class="skill-meta"><span>Graphic Design</span><span>88%</span></div>
+          <div class="bar-bg"><div class="bar-fill" data-w="88"></div></div>
+        </div>
+        <div class="skill-row">
+          <div class="skill-meta"><span>Video Editing</span><span>90%</span></div>
+          <div class="bar-bg"><div class="bar-fill" data-w="90"></div></div>
+        </div>
+        <div class="skill-row">
+          <div class="skill-meta"><span>TG Bot Dev</span><span>82%</span></div>
+          <div class="bar-bg"><div class="bar-fill" data-w="82"></div></div>
+        </div>
+        <div class="skill-row">
+          <div class="skill-meta"><span>Content Creation</span><span>92%</span></div>
+          <div class="bar-bg"><div class="bar-fill" data-w="92"></div></div>
+        </div>
+        <div class="skill-row">
+          <div class="skill-meta"><span>Leadership</span><span>85%</span></div>
+          <div class="bar-bg"><div class="bar-fill" data-w="85"></div></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Row 2 -->
+  <div class="dash-grid">
+
+    <!-- Terminal -->
+    <div class="dash-panel">
+      <div class="dash-panel-title">System Log</div>
+      <div class="terminal" id="terminal">
+        <div><span class="t-muted">$</span> <span class="t-blue">admin</span> <span class="t-muted">--init</span></div>
+        <div><span class="t-muted">[INFO]</span> <span class="t-white">System booting...</span></div>
+        <div><span class="t-muted">[OK]</span>   Auth module loaded</div>
+        <div><span class="t-muted">[OK]</span>   Portfolio API connected</div>
+        <div><span class="t-muted">[OK]</span>   TG Bot service running</div>
+        <div><span class="t-yellow">[WARN]</span> Lumivox CDN latency high (340ms)</div>
+        <div><span class="t-muted">[OK]</span>   Xplec Cipher DB synced</div>
+        <div><span class="t-muted">[INFO]</span> Session started: <span class="t-blue" id="session-user">sufiyan</span></div>
+        <div id="terminal-cursor"><span class="t-blue">▌</span></div>
+      </div>
+    </div>
+
+    <!-- Quick Actions -->
+    <div class="dash-panel">
+      <div class="dash-panel-title">Quick Actions</div>
+      <div class="quick-actions">
+        <button class="qa-btn" onclick="toast('✅ Portfolio cache cleared')"><span class="qa-icon">🔄</span>Refresh Site</button>
+        <button class="qa-btn" onclick="toast('🤖 TG Bot restarted')"><span class="qa-icon">🤖</span>Restart Bot</button>
+        <button class="qa-btn" onclick="toast('📦 Backup created')"><span class="qa-icon">💾</span>Backup Data</button>
+        <button class="qa-btn" onclick="toast('📬 Message sent')"><span class="qa-icon">📬</span>Send Blast</button>
+        <button class="qa-btn" onclick="toast('🎨 Theme toggled')"><span class="qa-icon">🎨</span>Toggle Theme</button>
+        <button class="qa-btn" onclick="toast('📊 Report generated')"><span class="qa-icon">📊</span>Generate Report</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Projects Table -->
+  <div class="dash-panel">
+    <div class="dash-panel-title">Project Tracker</div>
+    <table class="project-table">
+      <thead>
+        <tr>
+          <th>Project</th>
+          <th>Client</th>
+          <th>Type</th>
+          <th>Status</th>
+          <th>Due</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>Lumivox Studios Website</td>
+          <td>Internal</td>
+          <td>Web Design</td>
+          <td><span class="badge active">Active</span></td>
+          <td>Mar 15</td>
+        </tr>
+        <tr>
+          <td>Xplec Community Portal</td>
+          <td>Internal</td>
+          <td>Web + Bot</td>
+          <td><span class="badge active">Active</span></td>
+          <td>Mar 22</td>
+        </tr>
+        <tr>
+          <td>Brand Identity Pack</td>
+          <td>Client #12</td>
+          <td>Graphic Design</td>
+          <td><span class="badge done">Done</span></td>
+          <td>Feb 28</td>
+        </tr>
+        <tr>
+          <td>Promo Video Edit</td>
+          <td>Client #11</td>
+          <td>Video Editing</td>
+          <td><span class="badge done">Done</span></td>
+          <td>Feb 20</td>
+        </tr>
+        <tr>
+          <td>TG Notification Bot</td>
+          <td>Client #14</td>
+          <td>TG Bot Dev</td>
+          <td><span class="badge pending">Pending</span></td>
+          <td>Apr 01</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+</div>
+
+<!-- TOAST -->
+<div class="toast" id="toast"></div>
+
+<script>
+  // Credentials — change as needed
+  const CREDENTIALS = { sufiyan: 'lumivox2025' };
+
+  function tryLogin() {
+    const u = document.getElementById('u').value.trim();
+    const p = document.getElementById('p').value;
+    const err = document.getElementById('err');
+
+    if (CREDENTIALS[u] && CREDENTIALS[u] === p) {
+      document.getElementById('login-screen').style.display = 'none';
+      const dash = document.getElementById('dashboard');
+      dash.style.display = 'flex';
+      document.getElementById('logged-user').textContent = u;
+      document.getElementById('session-user').textContent = u;
+      // animate skill bars
+      setTimeout(() => {
+        document.querySelectorAll('.bar-fill').forEach(b => {
+          b.style.width = b.dataset.w + '%';
+        });
+      }, 300);
+    } else {
+      err.textContent = '⚠ Invalid credentials. Access denied.';
+      document.getElementById('p').value = '';
+      setTimeout(() => { err.textContent = ''; }, 3000);
+    }
+  }
+
+  // Enter key support
+  document.addEventListener('keydown', e => {
+    if (e.key === 'Enter') {
+      const dash = document.getElementById('dashboard');
+      if (dash.style.display !== 'flex') tryLogin();
+    }
+  });
+
+  function logout() {
+    document.getElementById('dashboard').style.display = 'none';
+    document.getElementById('login-screen').style.display = 'flex';
+    document.getElementById('u').value = '';
+    document.getElementById('p').value = '';
+  }
+
+  function toast(msg) {
+    const t = document.getElementById('toast');
+    t.textContent = msg;
+    t.style.display = 'block';
+    clearTimeout(t._timer);
+    t._timer = setTimeout(() => { t.style.display = 'none'; }, 2500);
+  }
+
+  // Terminal cursor blink
+  const cur = document.getElementById('terminal-cursor');
+  setInterval(() => {
+    cur.style.opacity = cur.style.opacity === '0' ? '1' : '0';
+  }, 600);
+</script>
+<footer style="text-align:center;padding:2rem;font-size:.72rem;color:#4b6080;border-top:1px solid rgba(59,130,246,0.1);margin-top:2rem;font-family:'JetBrains Mono',monospace;">
+  ©2014 <strong style="color:#8b9ab5;">Xplec Cipher</strong>. All Rights Reserved.
+</footer>
+
+</body>
+</html>
