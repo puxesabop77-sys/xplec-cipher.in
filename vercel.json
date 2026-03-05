@@ -1,7 +1,8 @@
 {
   "rewrites": [
     { "source": "/sufiyan", "destination": "/sufiyan.html" },
-    { "source": "/Ava", "destination": "/Ava.html" }
+    { "source": "/Ava", "destination": "/Ava.html" },
+    { "source": "/api/chat", "destination": "/api/chat.js" }
   ],
   "cleanUrls": true,
   "headers": [
