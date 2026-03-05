@@ -1,6 +1,7 @@
 {
   "rewrites": [
-    { "source": "/sufiyan", "destination": "/sufiyan.html" }
+    { "source": "/sufiyan", "destination": "/sufiyan.html" },
+    { "source": "/Ava", "destination": "/Ava.html" }
   ],
   "cleanUrls": true
 }
